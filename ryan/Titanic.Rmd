@@ -1,0 +1,69 @@
+---
+title: "Titanic Analysis"
+author: "Ryan Stecher"
+date: "6/7/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library('ggplot2') # visualization
+library('scales') # visualization
+library('dplyr') # data manipulation
+```
+
+# Titanic Bishes!
+
+Who will survive? The rich? The poor? The young or old? Man or woman? The answers lie in the data.
+
+## Bernard, analysis
+
+```{r}
+train <- read.csv('train.csv', stringsAsFactors = F)
+test  <- read.csv('test.csv', stringsAsFactors = F)
+passangers  <- bind_rows(train, test)
+
+# Let's see what were working with here
+str(passangers)
+
+summary(passangers)
+
+hist(passangers$Age)
+hist(passangers$Fare)
+```
+Adjusting for inflation, $100 in 1911 was ~$2,556.59
+
+## The Family's a Sinkhole
+Let's take a look at family size (shout out to @Megan Risdal)
+```{r}
+# Create a family size variable including the passenger themselves
+passangers$Fsize <- passangers$SibSp + passangers$Parch + 1
+
+# Create a family variable 
+passangers$Family <- paste(passangers$Surname, passangers$Fsize, sep='_')
+
+# Use ggplot2 to visualize the relationship between family size & survival
+ggplot(passangers[1:891,], aes(x = Fsize, fill = factor(Survived))) +
+  geom_bar(stat='count', position='dodge') +
+  scale_x_continuous(breaks=c(1:11)) +
+  labs(x = 'Family Size')
+```
+
+```{r}
+outlier_check <- function(x) {
+    qnts <- quantile(x)
+    q1 <- qnts[2]
+    q3 <- qnts[4]
+    iqr <- q3 - q1
+    lwr_bnd <- q1 - 1.5 * iqr
+    upr_bnd <- q3 + 1.5 * iqr
+    outliers <- x[x < lwr_bnd | x > upr_bnd]
+    if (length(outliers) == 0) {
+        print("No outliers present")
+    } else {
+        print("Outliers detected:")
+        cat(outliers)
+    }
+}
+outlier_check(passangers$fare)
+```
